@@ -1,19 +1,34 @@
-import React, { useState } from "react";
+import React, { useRef } from "react";
 import L from "leaflet";
 import {
 	Map,
 	TileLayer,
 	Marker,
 	Popup,
-	FeatureGroup,
-	Circle
+	FeatureGroup
 } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import { useGlobalState } from "../services/Store"; 
 
-const DrawTools = () => {
-	 const [, setIsModalOpen] = useGlobalState("isModalOpen");
-    const [, setNewShapeGeoJSON] = useGlobalState("newShapeGeoJSON");
+const DrawTools = React.forwardRef((props, ref) => {
+	const [, setIsModalOpen] = useGlobalState("isModalOpen");
+	const [, setNewShapeGeoJSON] = useGlobalState("newShapeGeoJSON");
+
+	// Ref to FeatureGroup for layer manipulation
+	const featureGroupRef = useRef(null);
+	// Keep track of last created layer
+	const lastCreatedLayerRef = useRef(null);
+
+	// Expose removeLastCreatedLayer to parent via ref
+	React.useImperativeHandle(ref, () => ({
+		removeLastCreatedLayer() {
+			if (featureGroupRef.current && lastCreatedLayerRef.current) {
+				featureGroupRef.current.removeLayer(lastCreatedLayerRef.current);
+				lastCreatedLayerRef.current = null;
+				setNewShapeGeoJSON(null);
+			}
+		}
+	}));
 
 	const _onEdited = e => {
 		let numEdited = 0;
@@ -21,53 +36,32 @@ const DrawTools = () => {
 			numEdited += 1;
 		});
 		console.log(`_onEdited: edited ${numEdited} layers`, e);
-
-		// this._onChange();
 	};
 
 	const _onCreated = e => {
-		// let type = e.layerType;
-		// let layer = e.layer;
-		// if (type === "marker") {
-		// 	// Do marker specific actions
-		// 	console.log("_onCreated: marker created", e);
-		// } else {
-		// 	console.log("_onCreated: something else created:", type, e);
-		// }
-
-		// console.log("Geohttp://localhost:3000/json", layer.toGeoJSON());
-		// console.log("coords", layer.getLatLngs());
-		// Do whatever else you need to. (save to db; etc)
-		// console.log(" co ordinates", JSON.stringify(e.layer.toGeoJSON()));
-		// console.log(" co ordinates", JSON.stringify(e));
 		const { layerType, layer } = e;
 
-    // Use the layer's getLatLngs() method to get the coordinates
-    const latLngs = layer.getLatLngs();
+		let coordinates;
 
-    // The structure of latLngs differs. Polygons are nested one level deeper.
-    // We'll map the LatLng objects to a clean [latitude, longitude] array.
-    let coordinates;
+		if (layerType === "marker") {
+			const latLng = layer.getLatLng();
+			coordinates = [latLng.lat, latLng.lng];
+		} else if (layerType === "polygon" || layerType === "rectangle") {
+			coordinates = layer.getLatLngs()[0].map(latlng => [latlng.lat, latlng.lng]);
+		} else if (layerType === "polyline") {
+			coordinates = layer.getLatLngs().map(latlng => [latlng.lat, latlng.lng]);
+		} else {
+			coordinates = layer.getLatLngs ? layer.getLatLngs() : null;
+		}
 
-    if (layerType === "polygon" || layerType === "rectangle") {
-        // For polygons, the coordinates are in the first element of the array.
-        // We map over them to create a simple array of [lat, lng] pairs.
-        coordinates = latLngs[0].map(latlng => [latlng.lat, latlng.lng]);
-    } else { // This handles polylines
-        coordinates = latLngs.map(latlng => [latlng.lat, latlng.lng]);
-    }
+		console.log("Extracted Coordinates:", coordinates);
 
-    // ✅ This will log only the clean coordinates array
-    console.log("Extracted Coordinates:", coordinates);
+		// Save the layer reference so we can remove if needed
+		lastCreatedLayerRef.current = layer;
 
-    // You can still proceed with saving the full GeoJSON to the state
-    const newLayer = { id: layer._leaflet_id, geojson: layer.toGeoJSON() };
-
-	  setNewShapeGeoJSON(layer.toGeoJSON());
-        
-        // Open the modal
-    setIsModalOpen(true);
-		// this._onChange();
+		// Save GeoJSON and open modal
+		setNewShapeGeoJSON(layer.toGeoJSON());
+		setIsModalOpen(true);
 	};
 
 	const _onDeleted = e => {
@@ -76,8 +70,6 @@ const DrawTools = () => {
 			numDeleted += 1;
 		});
 		console.log(`onDeleted: removed ${numDeleted} layers`, e);
-
-		// this._onChange();
 	};
 
 	const _onMounted = drawControl => {
@@ -104,22 +96,8 @@ const DrawTools = () => {
 		console.log("_onDrawStart", e);
 	};
 
-	/*onEdited	function	hook to leaflet-draw's draw:edited event
-onCreated	function	hook to leaflet-draw's draw:created event
-onDeleted	function	hook to leaflet-draw's draw:deleted event
-onMounted	function	hook to leaflet-draw's draw:mounted event
-onEditStart	function	hook to leaflet-draw's draw:editstart event
-onEditStop	function	hook to leaflet-draw's draw:editstop event
-onDeleteStart	function	hook to leaflet-draw's draw:deletestart event
-onDeleteStop	function	hook to leaflet-draw's draw:deletestop event
-onDrawStart	function	hook to leaflet-draw's draw:drawstart event
-onDrawStop	function	hook to leaflet-draw's draw:drawstop event
-onDrawVertex	function	hook to leaflet-draw's draw:drawvertex event
-onEditMove	function	hook to leaflet-draw's draw:editmove event
-onEditResize	function	hook to leaflet-draw's draw:editresize event
-onEditVertex	function	hook to leaflet-draw's draw:editvertex event*/
 	return (
-		<FeatureGroup>
+		<FeatureGroup ref={featureGroupRef}>
 			<EditControl
 				onDrawStart={_onDrawStart}
 				position="topleft"
@@ -146,6 +124,6 @@ onEditVertex	function	hook to leaflet-draw's draw:editvertex event*/
 			/>
 		</FeatureGroup>
 	);
-};
+});
 
 export default DrawTools;

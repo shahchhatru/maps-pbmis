@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useGlobalState } from "../service/Store";
+import { useGlobalState } from "../services/Store";
 
 // Dummy data for the project dropdown
 const dummyProjects = [
@@ -16,13 +16,15 @@ const SaveModal = () => {
 
   // Local state for form fields
   const [name, setName] = useState("");
-  const [selectedProjectId, setSelectedProjectId] = useState(dummyProjects[0]?.id || "");
+  const [selectedProjectId, setSelectedProjectId] = useState(
+    (dummyProjects[0] && dummyProjects[0].id) || ""
+  );
 
-  // Effect to reset form when modal opens
+  // Reset form when modal opens
   useEffect(() => {
     if (isModalOpen) {
       setName("");
-      setSelectedProjectId(dummyProjects[0]?.id || 0);
+      setSelectedProjectId((dummyProjects[0] && dummyProjects[0].id) || "");
     }
   }, [isModalOpen]);
 
@@ -33,18 +35,21 @@ const SaveModal = () => {
       return;
     }
 
-    // Construct the payload to send to the backend
+    const mapSymbol =
+      newShapeGeoJSON && newShapeGeoJSON.geometry
+        ? newShapeGeoJSON.geometry.type
+        : "Polygon";
+
     const payload = {
       project_id: selectedProjectId,
       name: name,
-      mapsymbol: newShapeGeoJSON?.geometry?.type || 'Polygon', // e.g., 'Polygon' or 'Point'
+      mapsymbol: mapSymbol,
       coordinates: newShapeGeoJSON || [],
     };
 
     console.log("Sending data to backend:", payload);
 
     try {
-      // Replace with your actual backend URL
       const dummyUrl = "https://your-backend.com/api/save-mapinfo";
       const response = await fetch(dummyUrl, {
         method: "POST",
@@ -55,20 +60,14 @@ const SaveModal = () => {
       });
 
       if (!response.ok) {
-        // Mocking a failed response for demonstration
         throw new Error("Network response was not ok.");
       }
-      
-      // Since the URL is a dummy, we'll simulate a success response
-      console.log("Simulated API Response: { success: true, data: ... }");
+
       alert("Shape information saved successfully!");
 
-      // Add the new shape to the map layers state and close the modal
-      // Note: We use a simple unique ID here. In a real app, you might get an ID from the backend.
       const newLayer = { id: Date.now(), geojson: newShapeGeoJSON };
-      setLayers(prev => [...prev, newLayer]);
+      setLayers((prev) => [...prev, newLayer]);
       closeModal();
-
     } catch (error) {
       console.error("Failed to save map info:", error);
       alert("Failed to save shape. See console for details.");
@@ -77,10 +76,9 @@ const SaveModal = () => {
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setNewShapeGeoJSON(null); // Clear the temp shape data
+    setNewShapeGeoJSON(null);
   };
 
-  // Don't render the modal if it's not open
   if (!isModalOpen || !newShapeGeoJSON) {
     return null;
   }
@@ -119,13 +117,21 @@ const SaveModal = () => {
         <div className="form-group">
           <label>GeoJSON Coordinates</label>
           <span className="geojson-display">
-            <pre>{JSON.stringify(newShapeGeoJSON.geometry.coordinates, null, 2)}</pre>
+            <pre>
+              {newShapeGeoJSON &&
+                newShapeGeoJSON.geometry &&
+                JSON.stringify(newShapeGeoJSON.geometry.coordinates, null, 2)}
+            </pre>
           </span>
         </div>
 
         <div className="modal-actions">
-          <button onClick={saveMapInfo} className="button-primary">Save</button>
-          <button onClick={closeModal} className="button-secondary">Cancel</button>
+          <button onClick={saveMapInfo} className="button-primary">
+            Save
+          </button>
+          <button onClick={closeModal} className="button-secondary">
+            Cancel
+          </button>
         </div>
       </div>
     </div>
