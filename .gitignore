@@ -1,0 +1,16 @@
+node_modules/
+
+# Example .gitignore that includes node_modules
+# (i.e. do not write node_modules here if you want it tracked)
+
+# Ignore logs
+logs
+*.log
+npm-debug.log*
+
+# Ignore environment files
+.env
+
+# Ignore build outputs
+dist
+build
