@@ -1,6 +1,7 @@
 import React, { useState, useContext, createContext, useEffect } from 'react';
 import jwt_decode from 'jwt-decode'; // You'll need to install this: npm install jwt-decode
-
+import CryptoJS from 'crypto-js'; // For AES encryption/decryption, install with: npm install crypto-js
+import { BASE_URL } from '../constants/index';
 // 1. Create the Auth Context
 // This context will hold the authentication state and functions.
 const AuthContext = createContext(null);
@@ -29,53 +30,64 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     // Login function
-    const login = async (username, password) => {
-        setIsLoading(true);
-        console.log("Attempting login with:", username);
+    const login = async (username, password, municipality_code = null) => {
+    setIsLoading(true);
+    console.log("Attempting login with:", username);
 
-        try {
-            // Replace '/api/login' with your actual login endpoint
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                // Note: Your backend expects encrypted data.
-                // This example sends plain text. You would need to implement
-                // the same crypto-js AES encryption on the client-side.
-                // For simplicity, this example assumes the backend can handle plain text.
-                body: JSON.stringify({
-                    data: { username, password }, // Adjust payload as per your backend needs
-                    // municipality_code: 'your_code_if_needed'
-                }),
-            });
+    try {
+        const loginPayload = {
+            username,
+            password,
+        };
 
-            const result = await response.json();
+        // Encrypt data using AES (must match backend's encryption)
+        const secret = process.env.REACT_APP_CIPHER_SECRET || 'random'; // Use .env for secret in production
+        const encryptedData = CryptoJS.AES.encrypt(
+            JSON.stringify(loginPayload),
+            secret
+        ).toString();
 
-            if (!response.ok || !result.success) {
-                throw new Error(result.message || 'Login failed');
-            }
+        const body = {
+            data: encryptedData,
+        };
 
-            const receivedToken = result.data.token.replace('Bearer ', '');
-            const decodedUser = jwt_decode(receivedToken);
-
-            setUser(decodedUser);
-            setToken(receivedToken);
-            localStorage.setItem('token', receivedToken);
-            console.log("Login successful");
-            return decodedUser;
-
-        } catch (err) {
-            console.error("Login failed:", err.message);
-            // Ensure state is clean on failure
-            setUser(null);
-            setToken(null);
-            localStorage.removeItem('token');
-            throw err; // Re-throw the error to be caught by the form
-        } finally {
-            setIsLoading(false);
+        if (municipality_code) {
+            body.municipality_code = municipality_code;
         }
-    };
+
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Login failed');
+        }
+
+        const receivedToken = result.data.token.replace('Bearer ', '');
+        const decodedUser = jwt_decode(receivedToken);
+
+        setUser(decodedUser);
+        setToken(receivedToken);
+        localStorage.setItem('token', receivedToken);
+        console.log("Login successful");
+        return decodedUser;
+
+    } catch (err) {
+        console.error("Login failed:", err.message);
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem('token');
+        throw err;
+    } finally {
+        setIsLoading(false);
+    }
+};
 
 
     // Logout function

@@ -1,0 +1,1 @@
+export const BASE_URL = 'https://www.lpbmis.gov.np/api/';
