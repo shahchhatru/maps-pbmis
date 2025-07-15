@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', receivedToken);
         console.log("Login successful");
         setIsAuthenticated(true);
-        history("/")
+        history.push("/")
         return decodedUser;
 
     } catch (err) {
