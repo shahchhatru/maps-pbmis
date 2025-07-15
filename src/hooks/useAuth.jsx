@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(null); // Holds the JWT
     const [isLoading, setIsLoading] = useState(true); // Used to show a loader on initial check
     const [isAuthenticated,setIsAuthenticated] = useState(false);
-    const history = useHistory();
+   // const history = useHistory();
 
     // Effect to check for a logged-in user in localStorage on component mount
     useEffect(() => {
@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', receivedToken);
         console.log("Login successful");
         setIsAuthenticated(true);
-        history.push("/")
+        //history.push("/maps")
         return decodedUser;
 
     } catch (err) {

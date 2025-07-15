@@ -14,7 +14,7 @@ function App() {
           <Route path="/login">
             <LoginPage />
           </Route>
-          <ProtectedRoute path="/">
+          <ProtectedRoute path="/maps">
             <MapComponent />
           </ProtectedRoute>
         </Switch>

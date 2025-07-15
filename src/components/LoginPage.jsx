@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth'; // adjust path if needed
 import './Login.css';
+import { useHistory } from 'react-router-dom/cjs/react-router-dom';
 
 const Login = () => {
   const { login, isLoading } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const history = useHistory();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,6 +18,7 @@ const Login = () => {
       await login(username, password);
       // Redirect or show success message as needed
       console.log('Login successful');
+      history.push("/maps")
     } catch (err) {
       setError(err.message || 'Login failed');
     }
