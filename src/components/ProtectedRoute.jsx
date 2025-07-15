@@ -4,11 +4,11 @@ import { Route, Redirect } from 'react-router-dom';
 
 export default function ProtectedRoute({ children, ...rest }) {
   let auth = useAuth();
-  if(auth.isAuthenticated){
-    return <div>
-      Unauthorized
-    </div>
-  }
+  // if(!auth.isAuthenticated){
+  //   return <div>
+  //     Unauthorized
+  //   </div>
+  // }
   
   if (auth.isLoading) {
     return <FullScreenLoader message="Authenticating..."/>;
