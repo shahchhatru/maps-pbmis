@@ -2,6 +2,8 @@ import React, { useState, useContext, createContext, useEffect } from 'react';
 import jwt_decode from 'jwt-decode'; // You'll need to install this: npm install jwt-decode
 import CryptoJS from 'crypto-js'; // For AES encryption/decryption, install with: npm install crypto-js
 import { BASE_URL } from '../constants/index';
+import { useHistory } from 'react-router-dom';
+
 // 1. Create the Auth Context
 // This context will hold the authentication state and functions.
 const AuthContext = createContext(null);
@@ -12,6 +14,8 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null); // Holds user data if logged in
     const [token, setToken] = useState(null); // Holds the JWT
     const [isLoading, setIsLoading] = useState(true); // Used to show a loader on initial check
+    const [isAuthenticated,setIsAuthenticated] = useState(false);
+    const history = useHistory();
 
     // Effect to check for a logged-in user in localStorage on component mount
     useEffect(() => {
@@ -76,6 +80,8 @@ export const AuthProvider = ({ children }) => {
         setToken(receivedToken);
         localStorage.setItem('token', receivedToken);
         console.log("Login successful");
+        setIsAuthenticated(true);
+        history("/")
         return decodedUser;
 
     } catch (err) {
@@ -102,10 +108,11 @@ export const AuthProvider = ({ children }) => {
     const authContextValue = {
         user,
         token,
-        isAuthenticated: !!user, // True if user object is not null
+        isAuthenticatedUser: !!user, // True if user object is not null
         isLoading,
         login,
         logout,
+        isAuthenticated,
     };
 
     return (
