@@ -1,15 +1,28 @@
 import { useState, useCallback } from 'react';
 import { BASE_URL } from '../constants';
+import { getAuthToken } from '../utils/auth';
+
 export const useProjectMapAPI = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Helper to build headers with token
+  const buildHeaders = () => {
+    const token = getAuthToken();
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: token }),
+    };
+  };
 
   // 1. Fetch list of projects
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(BASE_URL+'projectIdAndName');
+      const response = await fetch(BASE_URL + 'projectIdAndName', {
+        headers: buildHeaders(),
+      });
       const result = await response.json();
 
       if (!response.ok || !result.success) {
@@ -31,7 +44,9 @@ export const useProjectMapAPI = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(BASE_URL+ 'mapTypes');
+      const response = await fetch(BASE_URL + 'mapTypes', {
+        headers: buildHeaders(),
+      });
       const result = await response.json();
 
       if (!response.ok || !result.success) {
@@ -53,11 +68,9 @@ export const useProjectMapAPI = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(BASE_URL+ 'addMap', {
+      const response = await fetch(BASE_URL + 'addMap', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: buildHeaders(),
         body: JSON.stringify({
           name,
           project_id,
