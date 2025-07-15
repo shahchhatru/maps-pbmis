@@ -1,72 +1,86 @@
 import React, { useState, useEffect } from "react";
 import { useGlobalState } from "../services/Store";
+import { useProjectMapAPI } from "../hooks/useProjectMapApi";
 
-// Dummy data for the project dropdown
+// Dummy fallback projects
 const dummyProjects = [
-  { id: "proj_1", name: "Project Alpha" },
-  { id: "proj_2", name: "Project Beta" },
-  { id: "proj_3", name: "Project Gamma" },
+  { project_id: "proj_1", project_name: "Project Alpha" },
+  { project_id: "proj_2", project_name: "Project Beta" },
+  { project_id: "proj_3", project_name: "Project Gamma" },
+];
+
+// Dummy map types
+const dummyMapTypes = [
+  { id: 1, name: "Hospital" },
+  { id: 2, name: "River" },
+  { id: 3, name: "School" },
+  { id: 4, name: "Forest" },
+  { id: 5, name: "Hill" },
+  { id: 6, name: "Temple" },
+  { id: 7, name: "Church" },
 ];
 
 const SaveModal = () => {
-  // Global state for modal visibility and GeoJSON data
   const [isModalOpen, setIsModalOpen] = useGlobalState("isModalOpen");
   const [newShapeGeoJSON, setNewShapeGeoJSON] = useGlobalState("newShapeGeoJSON");
   const [layers, setLayers] = useGlobalState("layers");
 
-  // Local state for form fields
-  const [name, setName] = useState("");
-  const [selectedProjectId, setSelectedProjectId] = useState(
-    (dummyProjects[0] && dummyProjects[0].id) || ""
-  );
+  const { fetchProjects, addMap, loading, error } = useProjectMapAPI();
 
-  // Reset form when modal opens
+  const [projects, setProjects] = useState([]);
+  const [name, setName] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [selectedMapTypeId, setSelectedMapTypeId] = useState(dummyMapTypes[0].id);
+
+  // Fetch projects on modal open
   useEffect(() => {
     if (isModalOpen) {
       setName("");
-      setSelectedProjectId((dummyProjects[0] && dummyProjects[0].id) || "");
+      fetchProjects()
+        .then(function(data) {
+          if (data && data.length > 0) {
+            setProjects(data);
+            setSelectedProjectId(data[0].project_id);
+          } else {
+            setProjects(dummyProjects);
+            setSelectedProjectId(dummyProjects[0].project_id);
+          }
+        })
+        .catch(function(err) {
+          console.error("Failed to fetch projects:", err);
+          setProjects(dummyProjects);
+          setSelectedProjectId(dummyProjects[0].project_id);
+        });
     }
-  }, [isModalOpen]);
+  }, [isModalOpen, fetchProjects]);
 
-  // Function to handle the API request
+  // Save map info
   const saveMapInfo = async () => {
     if (!name.trim()) {
       alert("Please enter a name for the shape.");
       return;
     }
 
-    const mapSymbol =
-      newShapeGeoJSON && newShapeGeoJSON.geometry
-        ? newShapeGeoJSON.geometry.type
-        : "Polygon";
+    var mapSymbol = (newShapeGeoJSON && newShapeGeoJSON.geometry && newShapeGeoJSON.geometry.type) || "Polygon";
 
-    const payload = {
-      project_id: selectedProjectId,
+    var payload = {
       name: name,
-      mapsymbol: mapSymbol,
+      project_id: selectedProjectId,
       coordinates: newShapeGeoJSON || [],
+      map_type_id: selectedMapTypeId,
     };
 
-    console.log("Sending data to backend:", payload);
-
     try {
-      const dummyUrl = "https://your-backend.com/api/save-mapinfo";
-      const response = await fetch(dummyUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const result = await addMap(payload);
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok.");
+      if (!result || !result.success) {
+        throw new Error((result && result.message) || "Failed to add map");
       }
 
       alert("Shape information saved successfully!");
 
       const newLayer = { id: Date.now(), geojson: newShapeGeoJSON };
-      setLayers((prev) => [...prev, newLayer]);
+      setLayers(function(prev) { return prev.concat(newLayer); });
       closeModal();
     } catch (error) {
       console.error("Failed to save map info:", error);
@@ -94,7 +108,7 @@ const SaveModal = () => {
             id="shape-name"
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={function(e) { setName(e.target.value); }}
             placeholder="Enter a name for the shape"
           />
         </div>
@@ -104,13 +118,32 @@ const SaveModal = () => {
           <select
             id="project-select"
             value={selectedProjectId}
-            onChange={(e) => setSelectedProjectId(e.target.value)}
+            onChange={function(e) { setSelectedProjectId(e.target.value); }}
           >
-            {dummyProjects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name} (ID: {project.id})
-              </option>
-            ))}
+            {projects.map(function(project) {
+              return (
+                <option key={project.project_id} value={project.project_id}>
+                  {project.project_name} (ID: {project.project_id})
+                </option>
+              );
+            })}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="map-type-select">Map Type</label>
+          <select
+            id="map-type-select"
+            value={selectedMapTypeId}
+            onChange={function(e) { setSelectedMapTypeId(Number(e.target.value)); }}
+          >
+            {dummyMapTypes.map(function(type) {
+              return (
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                </option>
+              );
+            })}
           </select>
         </div>
 
@@ -126,13 +159,15 @@ const SaveModal = () => {
         </div>
 
         <div className="modal-actions">
-          <button onClick={saveMapInfo} className="button-primary">
-            Save
+          <button onClick={saveMapInfo} className="button-primary" disabled={loading}>
+            {loading ? "Saving..." : "Save"}
           </button>
           <button onClick={closeModal} className="button-secondary">
             Cancel
           </button>
         </div>
+
+        {error && <div className="error-message">{error}</div>}
       </div>
     </div>
   );
