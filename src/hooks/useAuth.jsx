@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
             body.municipality_code = municipality_code;
         }
 
-        const response = await fetch('/api/login', {
+        const response = await fetch(BASE_URL +'login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
