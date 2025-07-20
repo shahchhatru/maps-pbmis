@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
                 const decodedUser = jwt_decode(storedToken);
                 setUser(decodedUser);
                 setToken(storedToken);
+                setIsAuthenticated(true);
             }
         } catch (error) {
             console.error("Failed to parse token from localStorage", error);
