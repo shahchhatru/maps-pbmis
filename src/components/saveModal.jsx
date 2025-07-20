@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useGlobalState } from "../services/Store";
 import { useProjectMapAPI } from "../hooks/useProjectMapApi";
+import { useLocation } from "react-router-dom";
 
 // Dummy fallback projects
 const dummyProjects = [
@@ -32,27 +33,45 @@ const SaveModal = () => {
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [selectedMapTypeId, setSelectedMapTypeId] = useState(dummyMapTypes[0].id);
 
+const location = useLocation();
+const queryParams = new URLSearchParams(location.search);
+const queryProjectId = queryParams.get("project_id");
   // Fetch projects on modal open
   useEffect(() => {
     if (isModalOpen) {
       setName("");
-      fetchProjects()
-        .then(function(data) {
-          if (data && data.length > 0) {
-            setProjects(data);
-            setSelectedProjectId(data[0].project_id);
-          } else {
-            setProjects(dummyProjects);
-            setSelectedProjectId(dummyProjects[0].project_id);
-          }
-        })
-        .catch(function(err) {
-          console.error("Failed to fetch projects:", err);
-          setProjects(dummyProjects);
-          setSelectedProjectId(dummyProjects[0].project_id);
-        });
+        fetchProjects()
+      .then(function (data) {
+        let projectList = data && data.length > 0 ? data : dummyProjects;
+
+        // ✅ If project_id is in query and not in fetched projects, add it
+        if (queryProjectId && !projectList.some(p => p.project_id === queryProjectId)) {
+          projectList = [
+            { project_id: queryProjectId, project_name: queryProjectId },
+            ...projectList,
+          ];
+        }
+
+        setProjects(projectList);
+        setSelectedProjectId(queryProjectId || projectList[0].project_id);
+      })
+      .catch(function (err) {
+        console.error("Failed to fetch projects:", err);
+
+        let projectList = dummyProjects;
+
+        if (queryProjectId && !dummyProjects.some(p => p.project_id === queryProjectId)) {
+          projectList = [
+            { project_id: queryProjectId, project_name: queryProjectId },
+            ...dummyProjects,
+          ];
+        }
+
+        setProjects(projectList);
+        setSelectedProjectId(queryProjectId || dummyProjects[0].project_id);
+         });
     }
-  }, [isModalOpen, fetchProjects]);
+  }, [isModalOpen, fetchProjects, queryProjectId]);
 
   // Save map info
   const saveMapInfo = async () => {
