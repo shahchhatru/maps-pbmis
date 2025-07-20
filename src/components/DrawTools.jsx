@@ -117,9 +117,9 @@ const DrawTools = React.forwardRef((props, ref) => {
 						}
 					},
 					rectangle: false,
-					circlemarker: false,
-					circle: false,
-					polygon: false
+					// circlemarker: false,
+					// circle: false,
+					// polygon: false
 				}}
 			/>
 		</FeatureGroup>
