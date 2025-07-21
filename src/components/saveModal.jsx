@@ -31,7 +31,7 @@ const SaveModal = () => {
   const [projects, setProjects] = useState([]);
   const [name, setName] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState("");
-  const [selectedMapTypeId, setSelectedMapTypeId] = useState(dummyMapTypes[0].id);
+  const [selectedMapTypeId, setSelectedMapTypeId] = useState(dummyMapTypes[0].name);
 
 const location = useLocation();
 const queryParams = new URLSearchParams(location.search);
@@ -158,7 +158,7 @@ const queryProjectId = queryParams.get("project_id");
           >
             {dummyMapTypes.map(function(type) {
               return (
-                <option key={type.id} value={type.id}>
+                <option key={type.id} value={type.name}>
                   {type.name}
                 </option>
               );
