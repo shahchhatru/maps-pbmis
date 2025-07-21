@@ -98,6 +98,8 @@ html {
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
   animation: slideUp 0.3s ease;
   font-size: 15px;
+  max-height: 85vh; 
+  overflow-y: auto;  
 }
 
 @keyframes slideUp {
@@ -148,6 +150,17 @@ html {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+.geojson-scrollable {
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* GeoJSON Display */

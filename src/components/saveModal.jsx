@@ -168,13 +168,13 @@ const queryProjectId = queryParams.get("project_id");
 
         <div className="form-group">
           <label>GeoJSON Coordinates</label>
-          <span className="geojson-display">
+           <div className="geojson-scrollable">
             <pre>
               {newShapeGeoJSON &&
                 newShapeGeoJSON.geometry &&
                 JSON.stringify(newShapeGeoJSON.geometry.coordinates, null, 2)}
             </pre>
-          </span>
+          </div>
         </div>
 
         <div className="modal-actions">
